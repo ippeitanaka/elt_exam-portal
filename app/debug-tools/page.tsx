@@ -28,12 +28,18 @@ export default function StudentPasswordTool() {
 
     try {
       // 学生データを検索
-      const { data, error } = await supabase.from("students").select("*").eq("student_id", studentId)
+      const { data, error } = await supabase.from("students").select("*").eq("student_id", studentId).single()
 
-      if (error) throw error
+      if (error) {
+        if (error.code === "PGRST116") {
+          throw new Error(`学生ID「${studentId}」は見つかりませんでした`)
+        }
+        throw error
+      }
 
-      if (data && data.length > 0) {
-        setStudentData(data[0])
+      if (data) {
+        console.log("取得した学生データ:", data)
+        setStudentData(data)
       } else {
         setError(`学生ID「${studentId}」は見つかりませんでした`)
       }
@@ -56,7 +62,17 @@ export default function StudentPasswordTool() {
           <CardContent className="space-y-4">
             <div className="flex space-x-2">
               <div className="flex-1">
-                <Input placeholder="学生ID" value={studentId} onChange={(e) => setStudentId(e.target.value)} />
+                <Input
+                  placeholder="学生ID"
+                  value={studentId}
+                  onChange={(e) => setStudentId(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault()
+                      searchStudent()
+                    }
+                  }}
+                />
               </div>
               <Button onClick={searchStudent} disabled={loading}>
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
@@ -64,7 +80,7 @@ export default function StudentPasswordTool() {
               </Button>
             </div>
 
-            {error && studentData === null && (
+            {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>エラー</AlertTitle>
@@ -91,12 +107,7 @@ export default function StudentPasswordTool() {
                     <TableRow>
                       <TableHead>パスワード</TableHead>
                       <TableCell>
-                        {studentData.password.startsWith("$2a$") ? (
-                          <span className="text-amber-600">ハッシュ化済み</span>
-                        ) : (
-                          <span className="text-green-600">平文</span>
-                        )}
-                        <span className="text-xs ml-2 text-gray-500">{studentData.password.substring(0, 10)}...</span>
+                        <span className="text-green-600">{studentData.password}</span>
                       </TableCell>
                     </TableRow>
                     <TableRow>
