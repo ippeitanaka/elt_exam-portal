@@ -251,33 +251,33 @@ export default function StudentDashboard({
     <Tabs defaultValue="overview" onValueChange={setActiveTab}>
       <TabsList className="grid w-full grid-cols-5 rounded-xl bg-muted/80">
         <TabsTrigger value="overview" className="rounded-lg data-[state=active]:bg-primary">
-          <div className="flex items-center gap-2">
-            <Activity size={16} />
-            <span>概要</span>
+          <div className="flex items-center gap-1 md:gap-2">
+            <Activity size={14} className="md:h-4 md:w-4" />
+            <span className="text-xs md:text-sm">概要</span>
           </div>
         </TabsTrigger>
         <TabsTrigger value="details" className="rounded-lg data-[state=active]:bg-primary">
-          <div className="flex items-center gap-2">
-            <BookOpen size={16} />
-            <span>詳細成績</span>
+          <div className="flex items-center gap-1 md:gap-2">
+            <BookOpen size={14} className="md:h-4 md:w-4" />
+            <span className="text-xs md:text-sm">詳細成績</span>
           </div>
         </TabsTrigger>
         <TabsTrigger value="analysis" className="rounded-lg data-[state=active]:bg-primary">
-          <div className="flex items-center gap-2">
-            <Target size={16} />
-            <span>成績分析</span>
+          <div className="flex items-center gap-1 md:gap-2">
+            <Target size={14} className="md:h-4 md:w-4" />
+            <span className="text-xs md:text-sm">成績分析</span>
           </div>
         </TabsTrigger>
         <TabsTrigger value="ranking" className="rounded-lg data-[state=active]:bg-primary">
-          <div className="flex items-center gap-2">
-            <Medal size={16} />
-            <span>順位情報</span>
+          <div className="flex items-center gap-1 md:gap-2">
+            <Medal size={14} className="md:h-4 md:w-4" />
+            <span className="text-xs md:text-sm">順位情報</span>
           </div>
         </TabsTrigger>
         <TabsTrigger value="achievements" className="rounded-lg data-[state=active]:bg-primary">
-          <div className="flex items-center gap-2">
-            <Award size={16} />
-            <span>実績</span>
+          <div className="flex items-center gap-1 md:gap-2">
+            <Award size={14} className="md:h-4 md:w-4" />
+            <span className="text-xs md:text-sm">実績</span>
           </div>
         </TabsTrigger>
       </TabsList>

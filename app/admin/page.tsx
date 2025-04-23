@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { useToast } from "@/hooks/use-toast"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertCircle, Loader2, FileText, Download, LogOut } from "lucide-react"
+import { AlertCircle, Loader2, FileText, Download, LogOut, User } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import Link from "next/link"
 import AdminLogin from "@/components/admin-login"
@@ -40,8 +40,10 @@ export default function AdminPage() {
 
   // Check if Supabase environment variables are set and admin is authenticated
   useEffect(() => {
+    // 環境変数のチェック
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
       setConfigError(true)
+      return
     }
 
     // Check if admin is already authenticated
@@ -68,7 +70,7 @@ export default function AdminPage() {
 
   // 学生データを取得
   const fetchStudents = async () => {
-    if (!isAuthenticated) return
+    if (!isAuthenticated || configError) return
 
     setIsLoadingStudents(true)
     try {
@@ -91,7 +93,7 @@ export default function AdminPage() {
 
   // 成績データを取得
   const fetchScores = async () => {
-    if (!isAuthenticated) return
+    if (!isAuthenticated || configError) return
 
     setIsLoadingScores(true)
     try {
@@ -114,11 +116,11 @@ export default function AdminPage() {
 
   // 認証後にデータを取得
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !configError) {
       fetchStudents()
       fetchScores()
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated, configError])
 
   const handleAdminLogin = () => {
     setIsAuthenticated(true)
@@ -365,6 +367,14 @@ export default function AdminPage() {
               ログアウト
             </Button>
           </CardHeader>
+          <CardContent>
+            <Button variant="outline" asChild className="w-full justify-start">
+              <Link href="/debug-tools" className="flex items-center">
+                <User className="mr-2 h-4 w-4" />
+                学生パスワード確認ツール
+              </Link>
+            </Button>
+          </CardContent>
         </Card>
 
         <Tabs defaultValue="import" onValueChange={setActiveTab}>

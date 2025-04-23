@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -18,18 +18,33 @@ export default function AdminLogin({ onLogin }: { onLogin: () => void }) {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
-  const [debugInfo, setDebugInfo] = useState<any>(null)
-  const supabase = createClientComponentClient()
+  const [configError, setConfigError] = useState(false)
   const { toast } = useToast()
+
+  // 環境変数のチェック
+  useEffect(() => {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      setConfigError(true)
+    }
+  }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // 環境変数が設定されていない場合はエラーを表示
+    if (configError) {
+      setError("Supabase環境変数が設定されていません。管理者に連絡してください。")
+      return
+    }
+
     setLoading(true)
     setError("")
-    setDebugInfo(null)
 
     try {
       console.log("管理者ログイン試行:", { username }) // パスワードはログに出力しない
+
+      // Supabaseクライアントの初期化
+      const supabase = createClientComponentClient()
 
       // まず管理者データを取得
       const { data: adminData, error: adminError } = await supabase
@@ -40,19 +55,6 @@ export default function AdminLogin({ onLogin }: { onLogin: () => void }) {
       if (adminError) {
         throw adminError
       }
-
-      // デバッグ情報を設定
-      setDebugInfo({
-        method: "管理者データ検索",
-        hasData: adminData && adminData.length > 0,
-        passwordType:
-          adminData && adminData.length > 0
-            ? adminData[0].password.startsWith("$2a$")
-              ? "ハッシュ化"
-              : "平文"
-            : "不明",
-        error: adminError ? adminError.message : null,
-      })
 
       if (!adminData || adminData.length === 0) {
         setError("ユーザー名が見つかりません。")
@@ -80,13 +82,6 @@ export default function AdminLogin({ onLogin }: { onLogin: () => void }) {
 
         authenticated = verifyData
       }
-
-      // 認証結果を更新
-      setDebugInfo((prev) => ({
-        ...prev,
-        authenticated,
-        verificationMethod: !admin.password.startsWith("$2a$") ? "直接比較" : "ハッシュ検証",
-      }))
 
       if (authenticated) {
         // 認証成功
@@ -118,6 +113,12 @@ export default function AdminLogin({ onLogin }: { onLogin: () => void }) {
       </CardHeader>
       <form onSubmit={handleLogin}>
         <CardContent className="space-y-4">
+          {configError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>Supabase環境変数が設定されていません。管理者に連絡してください。</AlertDescription>
+            </Alert>
+          )}
           <div className="space-y-2">
             <Label htmlFor="username">ユーザー名</Label>
             <Input
@@ -127,6 +128,7 @@ export default function AdminLogin({ onLogin }: { onLogin: () => void }) {
               onChange={(e) => setUsername(e.target.value)}
               placeholder=""
               required
+              disabled={configError}
             />
           </div>
           <div className="space-y-2">
@@ -138,6 +140,7 @@ export default function AdminLogin({ onLogin }: { onLogin: () => void }) {
               onChange={(e) => setPassword(e.target.value)}
               placeholder=""
               required
+              disabled={configError}
             />
           </div>
           {error && (
@@ -146,15 +149,9 @@ export default function AdminLogin({ onLogin }: { onLogin: () => void }) {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          {debugInfo && (
-            <div className="text-xs bg-gray-100 p-2 rounded-md">
-              <p>デバッグ情報:</p>
-              <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
-            </div>
-          )}
         </CardContent>
         <CardFooter>
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full" disabled={loading || configError}>
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

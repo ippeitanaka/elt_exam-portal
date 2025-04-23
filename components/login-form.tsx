@@ -159,12 +159,6 @@ export default function LoginForm() {
             </Alert>
           </motion.div>
         )}
-        {debugInfo && (
-          <div className="text-xs bg-gray-100 p-2 rounded-md">
-            <p>デバッグ情報:</p>
-            <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
-          </div>
-        )}
         <Button
           type="submit"
           className="w-full rounded-full bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-all"
@@ -180,11 +174,6 @@ export default function LoginForm() {
           )}
         </Button>
       </form>
-      <div className="text-center">
-        <a href="/debug-tools" className="text-xs text-gray-500 hover:underline">
-          デバッグツール
-        </a>
-      </div>
     </div>
   )
 }
