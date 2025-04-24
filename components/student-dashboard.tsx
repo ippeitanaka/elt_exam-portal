@@ -30,12 +30,15 @@ import {
   Target,
   BookOpen,
   Activity,
+  Calendar,
+  CheckCircle,
 } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import type { TestScoreWithStats } from "@/lib/ranking-utils"
 import { motion } from "framer-motion"
 import { ParamedicMascot } from "@/components/paramedic-mascot"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 type Student = {
   id: string
@@ -94,12 +97,14 @@ const achievements = [
 
 export default function StudentDashboard({
   student,
-  scores,
+  scores: propsScores,
 }: {
   student: Student
   scores: TestScoreWithStats[]
 }) {
   const [activeTab, setActiveTab] = useState("overview")
+  const [scores, setScores] = useState<TestScoreWithStats[]>(propsScores)
+  const [sortedScores, setScoresSorted] = useState([...scores])
 
   // 成績データがない場合
   if (scores.length === 0) {
@@ -427,38 +432,77 @@ export default function StudentDashboard({
               <CardDescription>これまでの模擬試験の成績一覧</CardDescription>
             </CardHeader>
             <CardContent>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-muted-foreground" />
+                  <span className="text-sm font-medium">{scores.length}回の模擬試験を受験しています</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">並べ替え:</span>
+                  <Select
+                    defaultValue="test_date"
+                    onValueChange={(value) => {
+                      const sortedScores = [...scores].sort((a, b) => {
+                        if (value === "test_date") {
+                          return new Date(b.test_date).getTime() - new Date(a.test_date).getTime()
+                        } else if (value === "section_ad") {
+                          return (b.section_ad || 0) - (a.section_ad || 0)
+                        } else if (value === "section_bc") {
+                          return (b.section_bc || 0) - (a.section_bc || 0)
+                        } else if (value === "total_score") {
+                          return (b.total_score || 0) - (a.total_score || 0)
+                        }
+                        return 0
+                      })
+                      setScores(sortedScores)
+                    }}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="並べ替え" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="test_date">実施日順</SelectItem>
+                      <SelectItem value="section_ad">AD問題点数順</SelectItem>
+                      <SelectItem value="section_bc">BC問題点数順</SelectItem>
+                      <SelectItem value="total_score">合計点数順</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50">
-                      <TableHead>試験日</TableHead>
                       <TableHead>試験名</TableHead>
-                      <TableHead className="whitespace-nowrap">
+                      <TableHead>実施日</TableHead>
+                      <TableHead className="whitespace-nowrap text-right">
                         A問題
                         <br />
                         （一般）
                       </TableHead>
-                      <TableHead className="whitespace-nowrap">
+                      <TableHead className="whitespace-nowrap text-right">
                         B問題
                         <br />
                         （必修）
                       </TableHead>
-                      <TableHead className="whitespace-nowrap">
+                      <TableHead className="whitespace-nowrap text-right">
                         C問題
                         <br />
                         （必修症例）
                       </TableHead>
-                      <TableHead className="whitespace-nowrap">
+                      <TableHead className="whitespace-nowrap text-right">
                         D問題
                         <br />
                         （一般症例）
                       </TableHead>
-                      <TableHead className="whitespace-nowrap">
+                      <TableHead className="whitespace-nowrap text-right">
                         AD問題
                         <br />
                         （一般合計）
                       </TableHead>
-                      <TableHead className="whitespace-nowrap">
+                      <TableHead className="whitespace-nowrap text-right">
                         BC問題
                         <br />
                         （必修合計）
@@ -470,20 +514,47 @@ export default function StudentDashboard({
                   </TableHeader>
                   <TableBody>
                     {scores.map((score, index) => {
-                      const passed = isPassingScore(score)
+                      const adPassing = (score.section_ad || 0) >= 132
+                      const bcPassing = (score.section_bc || 0) >= 44
+                      const passed = adPassing && bcPassing
+
                       return (
                         <TableRow
                           key={score.id}
                           className={`hover:bg-blue-50/50 ${index % 2 === 0 ? "bg-white" : "bg-gray-50/50"}`}
                         >
-                          <TableCell>{new Date(score.test_date).toLocaleDateString("ja-JP")}</TableCell>
-                          <TableCell>{score.test_name}</TableCell>
-                          <TableCell>{score.section_a || "-"}</TableCell>
-                          <TableCell>{score.section_b || "-"}</TableCell>
-                          <TableCell>{score.section_c || "-"}</TableCell>
-                          <TableCell>{score.section_d || "-"}</TableCell>
-                          <TableCell>{score.section_ad || "-"}</TableCell>
-                          <TableCell>{score.section_bc || "-"}</TableCell>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              <BookOpen className="h-4 w-4 text-primary" />
+                              {score.test_name}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-muted-foreground" />
+                              {new Date(score.test_date).toLocaleDateString("ja-JP")}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">{score.section_a || "-"}</TableCell>
+                          <TableCell className="text-right">{score.section_b || "-"}</TableCell>
+                          <TableCell className="text-right">{score.section_c || "-"}</TableCell>
+                          <TableCell className="text-right">{score.section_d || "-"}</TableCell>
+                          <TableCell
+                            className={`text-right font-medium ${adPassing ? "bg-green-50 text-green-700" : ""}`}
+                          >
+                            <div className="flex items-center justify-end gap-1">
+                              {score.section_ad || "-"}
+                              {adPassing && <CheckCircle className="h-4 w-4 text-green-500" />}
+                            </div>
+                          </TableCell>
+                          <TableCell
+                            className={`text-right font-medium ${bcPassing ? "bg-green-50 text-green-700" : ""}`}
+                          >
+                            <div className="flex items-center justify-end gap-1">
+                              {score.section_bc || "-"}
+                              {bcPassing && <CheckCircle className="h-4 w-4 text-green-500" />}
+                            </div>
+                          </TableCell>
                           <TableCell className="text-right font-medium">{score.total_score || "-"}</TableCell>
                           <TableCell className="text-center">
                             <Badge variant="outline" className="bg-blue-50 border-blue-200">
@@ -503,6 +574,24 @@ export default function StudentDashboard({
                     })}
                   </TableBody>
                 </Table>
+              </div>
+
+              <div className="mt-4 p-4 bg-muted/30 rounded-lg">
+                <h4 className="text-sm font-medium mb-2">合格基準</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div className="bg-white p-2 rounded-md shadow-sm">
+                    <div className="text-xs text-muted-foreground">AD問題（一般合計）</div>
+                    <div className="font-medium text-primary">132点以上</div>
+                  </div>
+                  <div className="bg-white p-2 rounded-md shadow-sm">
+                    <div className="text-xs text-muted-foreground">BC問題（必修合計）</div>
+                    <div className="font-medium text-primary">44点以上</div>
+                  </div>
+                  <div className="bg-white p-2 rounded-md shadow-sm">
+                    <div className="text-xs text-muted-foreground">判定</div>
+                    <div className="font-medium text-primary">両方必要</div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
