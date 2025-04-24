@@ -18,6 +18,11 @@ import AdminLogin from "@/components/admin-login"
 import TestResultsImport from "@/components/test-results-import"
 import TestManagement from "@/components/test-management"
 import { PasswordResetDialog } from "@/components/password-reset-dialog"
+import TestResultsList from "@/components/test-results-list"
+
+interface TestResultsListProps {
+  scores: any[]
+}
 
 export default function AdminPage() {
   const [isImporting, setIsImporting] = useState(false)
@@ -603,42 +608,7 @@ export default function AdminPage() {
                     <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
                   </div>
                 ) : scores.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>試験日</TableHead>
-                          <TableHead>試験名</TableHead>
-                          <TableHead>学生ID</TableHead>
-                          <TableHead>学生名</TableHead>
-                          <TableHead>A問題（一般）</TableHead>
-                          <TableHead>B問題（必修）</TableHead>
-                          <TableHead>C問題（必修症例）</TableHead>
-                          <TableHead>D問題（一般症例）</TableHead>
-                          <TableHead>AD問題（一般合計）</TableHead>
-                          <TableHead>BC問題（必修合計）</TableHead>
-                          <TableHead className="text-right">合計</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {scores.map((score) => (
-                          <TableRow key={score.id}>
-                            <TableCell>{new Date(score.test_date).toLocaleDateString("ja-JP")}</TableCell>
-                            <TableCell>{score.test_name}</TableCell>
-                            <TableCell>{score.student_id}</TableCell>
-                            <TableCell>{score.name || "名前なし"}</TableCell>
-                            <TableCell>{score.section_a || "-"}</TableCell>
-                            <TableCell>{score.section_b || "-"}</TableCell>
-                            <TableCell>{score.section_c || "-"}</TableCell>
-                            <TableCell>{score.section_d || "-"}</TableCell>
-                            <TableCell>{score.section_ad || "-"}</TableCell>
-                            <TableCell>{score.section_bc || "-"}</TableCell>
-                            <TableCell className="text-right">{score.total_score || "-"}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                  <TestResultsList scores={scores} />
                 ) : (
                   <Alert>
                     <AlertCircle className="h-4 w-4" />
