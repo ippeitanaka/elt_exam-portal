@@ -6,7 +6,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowUpDown, Calendar, Users } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { ArrowUpDown, Calendar, Users, CheckCircle } from "lucide-react"
 
 // 成績データの型定義
 type TestScore = {
@@ -38,6 +39,17 @@ interface TestResultsListProps {
 export default function TestResultsList({ scores }: TestResultsListProps) {
   // 並べ替えオプション
   const [sortOption, setSortOption] = useState<string>("student_id")
+
+  // 合格基準
+  const PASSING_SCORE_AD = 132 // AD問題の合格点
+  const PASSING_SCORE_BC = 44 // BC問題の合格点
+
+  // 合格判定関数
+  const isPassingScore = (score: TestScore) => {
+    const adPassing = (score.section_ad || 0) >= PASSING_SCORE_AD
+    const bcPassing = (score.section_bc || 0) >= PASSING_SCORE_BC
+    return { adPassing, bcPassing, allPassing: adPassing && bcPassing }
+  }
 
   // テスト情報を抽出
   const testInfos = useMemo(() => {
@@ -97,6 +109,29 @@ export default function TestResultsList({ scores }: TestResultsListProps) {
     })
   }
 
+  // 合格者数を計算
+  const calculatePassingStats = (scores: TestScore[]) => {
+    let adPassCount = 0
+    let bcPassCount = 0
+    let totalPassCount = 0
+
+    scores.forEach((score) => {
+      const { adPassing, bcPassing, allPassing } = isPassingScore(score)
+      if (adPassing) adPassCount++
+      if (bcPassing) bcPassCount++
+      if (allPassing) totalPassCount++
+    })
+
+    return {
+      adPassCount,
+      bcPassCount,
+      totalPassCount,
+      adPassRate: scores.length > 0 ? ((adPassCount / scores.length) * 100).toFixed(1) : "0.0",
+      bcPassRate: scores.length > 0 ? ((bcPassCount / scores.length) * 100).toFixed(1) : "0.0",
+      totalPassRate: scores.length > 0 ? ((totalPassCount / scores.length) * 100).toFixed(1) : "0.0",
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -139,6 +174,9 @@ export default function TestResultsList({ scores }: TestResultsListProps) {
             total_score: testScores.reduce((sum, score) => sum + (score.total_score || 0), 0) / studentCount,
           }
 
+          // 合格者数と合格率を計算
+          const passingStats = calculatePassingStats(testScores)
+
           return (
             <AccordionItem key={key} value={key}>
               <AccordionTrigger className="hover:bg-muted/50 px-4 py-2 rounded-lg">
@@ -152,14 +190,82 @@ export default function TestResultsList({ scores }: TestResultsListProps) {
                     <Users className="h-4 w-4" />
                     <span>{studentCount}名</span>
                   </div>
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                    合格率 {passingStats.totalPassRate}%
+                  </Badge>
                 </div>
               </AccordionTrigger>
               <AccordionContent>
                 <Card className="mt-2">
                   <CardHeader className="py-2">
-                    <CardTitle className="text-sm font-medium">平均点</CardTitle>
+                    <CardTitle className="text-sm font-medium">試験概要</CardTitle>
                   </CardHeader>
                   <CardContent className="py-2">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                      <div className="bg-muted/30 p-3 rounded-md">
+                        <div className="text-xs text-muted-foreground mb-1">平均点</div>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="bg-white p-2 rounded-md shadow-sm">
+                            <div className="text-xs text-muted-foreground">AD問題</div>
+                            <div className="font-medium">{averages.section_ad.toFixed(1)}</div>
+                          </div>
+                          <div className="bg-white p-2 rounded-md shadow-sm">
+                            <div className="text-xs text-muted-foreground">BC問題</div>
+                            <div className="font-medium">{averages.section_bc.toFixed(1)}</div>
+                          </div>
+                          <div className="bg-white p-2 rounded-md shadow-sm">
+                            <div className="text-xs text-muted-foreground">合計</div>
+                            <div className="font-medium">{averages.total_score.toFixed(1)}</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-muted/30 p-3 rounded-md">
+                        <div className="text-xs text-muted-foreground mb-1">合格基準</div>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="bg-white p-2 rounded-md shadow-sm">
+                            <div className="text-xs text-muted-foreground">AD問題</div>
+                            <div className="font-medium text-primary">{PASSING_SCORE_AD}点以上</div>
+                          </div>
+                          <div className="bg-white p-2 rounded-md shadow-sm">
+                            <div className="text-xs text-muted-foreground">BC問題</div>
+                            <div className="font-medium text-primary">{PASSING_SCORE_BC}点以上</div>
+                          </div>
+                          <div className="bg-white p-2 rounded-md shadow-sm">
+                            <div className="text-xs text-muted-foreground">判定</div>
+                            <div className="font-medium text-primary">両方必要</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-muted/30 p-3 rounded-md">
+                        <div className="text-xs text-muted-foreground mb-1">合格状況</div>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="bg-white p-2 rounded-md shadow-sm">
+                            <div className="text-xs text-muted-foreground">AD問題</div>
+                            <div className="font-medium text-green-600">{passingStats.adPassRate}%</div>
+                            <div className="text-xs">
+                              {passingStats.adPassCount}/{studentCount}名
+                            </div>
+                          </div>
+                          <div className="bg-white p-2 rounded-md shadow-sm">
+                            <div className="text-xs text-muted-foreground">BC問題</div>
+                            <div className="font-medium text-green-600">{passingStats.bcPassRate}%</div>
+                            <div className="text-xs">
+                              {passingStats.bcPassCount}/{studentCount}名
+                            </div>
+                          </div>
+                          <div className="bg-white p-2 rounded-md shadow-sm">
+                            <div className="text-xs text-muted-foreground">総合</div>
+                            <div className="font-medium text-green-600">{passingStats.totalPassRate}%</div>
+                            <div className="text-xs">
+                              {passingStats.totalPassCount}/{studentCount}名
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-2 md:grid-cols-7 gap-2 text-sm">
                       <div className="bg-muted/50 p-2 rounded-md">
                         <div className="text-xs text-muted-foreground">A問題</div>
@@ -282,22 +388,48 @@ export default function TestResultsList({ scores }: TestResultsListProps) {
                             {sortOption === "total_score" && <ArrowUpDown className="h-3 w-3" />}
                           </Button>
                         </TableHead>
+                        <TableHead className="text-center">判定</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {sortedScores.map((score) => (
-                        <TableRow key={score.id}>
-                          <TableCell className="font-medium">{score.student_id}</TableCell>
-                          <TableCell>{score.name || "名前なし"}</TableCell>
-                          <TableCell className="text-right">{score.section_a || "-"}</TableCell>
-                          <TableCell className="text-right">{score.section_b || "-"}</TableCell>
-                          <TableCell className="text-right">{score.section_c || "-"}</TableCell>
-                          <TableCell className="text-right">{score.section_d || "-"}</TableCell>
-                          <TableCell className="text-right font-medium">{score.section_ad || "-"}</TableCell>
-                          <TableCell className="text-right font-medium">{score.section_bc || "-"}</TableCell>
-                          <TableCell className="text-right font-medium">{score.total_score || "-"}</TableCell>
-                        </TableRow>
-                      ))}
+                      {sortedScores.map((score) => {
+                        const { adPassing, bcPassing, allPassing } = isPassingScore(score)
+
+                        return (
+                          <TableRow key={score.id}>
+                            <TableCell className="font-medium">{score.student_id}</TableCell>
+                            <TableCell>{score.name || "名前なし"}</TableCell>
+                            <TableCell className="text-right">{score.section_a || "-"}</TableCell>
+                            <TableCell className="text-right">{score.section_b || "-"}</TableCell>
+                            <TableCell className="text-right">{score.section_c || "-"}</TableCell>
+                            <TableCell className="text-right">{score.section_d || "-"}</TableCell>
+                            <TableCell
+                              className={`text-right font-medium ${adPassing ? "bg-green-50 text-green-700" : ""}`}
+                            >
+                              <div className="flex items-center justify-end gap-1">
+                                {score.section_ad || "-"}
+                                {adPassing && <CheckCircle className="h-4 w-4 text-green-500" />}
+                              </div>
+                            </TableCell>
+                            <TableCell
+                              className={`text-right font-medium ${bcPassing ? "bg-green-50 text-green-700" : ""}`}
+                            >
+                              <div className="flex items-center justify-end gap-1">
+                                {score.section_bc || "-"}
+                                {bcPassing && <CheckCircle className="h-4 w-4 text-green-500" />}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right font-medium">{score.total_score || "-"}</TableCell>
+                            <TableCell className="text-center">
+                              {allPassing ? (
+                                <Badge className="bg-green-500">合格</Badge>
+                              ) : (
+                                <Badge variant="destructive">不合格</Badge>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
                     </TableBody>
                   </Table>
                 </div>
