@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowUpDown, Calendar, Users, CheckCircle } from "lucide-react"
+import { ArrowUpDown, Calendar, Users, CheckCircle, Sun, Moon } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 // 成績データの型定義
 type TestScore = {
@@ -32,6 +33,9 @@ type TestInfo = {
   displayName: string
 }
 
+// 学生グループの型定義
+type StudentGroup = "day" | "evening" | "all"
+
 interface TestResultsListProps {
   scores: TestScore[]
 }
@@ -40,9 +44,22 @@ export default function TestResultsList({ scores }: TestResultsListProps) {
   // 並べ替えオプション
   const [sortOption, setSortOption] = useState<string>("student_id")
 
+  // 表示するグループ（全体、昼間部、夜間部）
+  const [viewGroup, setViewGroup] = useState<StudentGroup>("all")
+
   // 合格基準
   const PASSING_SCORE_AD = 132 // AD問題の合格点
   const PASSING_SCORE_BC = 44 // BC問題の合格点
+
+  // 学生が昼間部か夜間部かを判定する関数
+  const getStudentGroup = (studentId: string): StudentGroup => {
+    if (studentId.length >= 3) {
+      const thirdDigit = studentId.charAt(2)
+      if (thirdDigit === "2") return "day"
+      if (thirdDigit === "3") return "evening"
+    }
+    return "all" // デフォルト値
+  }
 
   // 合格判定関数
   const isPassingScore = (score: TestScore) => {
@@ -110,12 +127,28 @@ export default function TestResultsList({ scores }: TestResultsListProps) {
   }
 
   // 合格者数を計算
-  const calculatePassingStats = (scores: TestScore[]) => {
+  const calculatePassingStats = (scores: TestScore[], group: StudentGroup = "all") => {
+    // グループでフィルタリング
+    const filteredScores =
+      group === "all" ? scores : scores.filter((score) => getStudentGroup(score.student_id) === group)
+
+    const count = filteredScores.length
+    if (count === 0)
+      return {
+        adPassCount: 0,
+        bcPassCount: 0,
+        totalPassCount: 0,
+        adPassRate: "0.0",
+        bcPassRate: "0.0",
+        totalPassRate: "0.0",
+        count: 0,
+      }
+
     let adPassCount = 0
     let bcPassCount = 0
     let totalPassCount = 0
 
-    scores.forEach((score) => {
+    filteredScores.forEach((score) => {
       const { adPassing, bcPassing, allPassing } = isPassingScore(score)
       if (adPassing) adPassCount++
       if (bcPassing) bcPassCount++
@@ -126,9 +159,41 @@ export default function TestResultsList({ scores }: TestResultsListProps) {
       adPassCount,
       bcPassCount,
       totalPassCount,
-      adPassRate: scores.length > 0 ? ((adPassCount / scores.length) * 100).toFixed(1) : "0.0",
-      bcPassRate: scores.length > 0 ? ((bcPassCount / scores.length) * 100).toFixed(1) : "0.0",
-      totalPassRate: scores.length > 0 ? ((totalPassCount / scores.length) * 100).toFixed(1) : "0.0",
+      adPassRate: ((adPassCount / count) * 100).toFixed(1),
+      bcPassRate: ((bcPassCount / count) * 100).toFixed(1),
+      totalPassRate: ((totalPassCount / count) * 100).toFixed(1),
+      count,
+    }
+  }
+
+  // 平均点を計算
+  const calculateAverages = (scores: TestScore[], group: StudentGroup = "all") => {
+    // グループでフィルタリング
+    const filteredScores =
+      group === "all" ? scores : scores.filter((score) => getStudentGroup(score.student_id) === group)
+
+    const count = filteredScores.length
+    if (count === 0)
+      return {
+        section_a: 0,
+        section_b: 0,
+        section_c: 0,
+        section_d: 0,
+        section_ad: 0,
+        section_bc: 0,
+        total_score: 0,
+        count: 0,
+      }
+
+    return {
+      section_a: filteredScores.reduce((sum, score) => sum + (score.section_a || 0), 0) / count,
+      section_b: filteredScores.reduce((sum, score) => sum + (score.section_b || 0), 0) / count,
+      section_c: filteredScores.reduce((sum, score) => sum + (score.section_c || 0), 0) / count,
+      section_d: filteredScores.reduce((sum, score) => sum + (score.section_d || 0), 0) / count,
+      section_ad: filteredScores.reduce((sum, score) => sum + (score.section_ad || 0), 0) / count,
+      section_bc: filteredScores.reduce((sum, score) => sum + (score.section_bc || 0), 0) / count,
+      total_score: filteredScores.reduce((sum, score) => sum + (score.total_score || 0), 0) / count,
+      count,
     }
   }
 
@@ -161,21 +226,16 @@ export default function TestResultsList({ scores }: TestResultsListProps) {
           const key = `${testInfo.test_name}_${testInfo.test_date}`
           const testScores = groupedScores.get(key) || []
           const sortedScores = sortScores(testScores, sortOption)
-          const studentCount = testScores.length
 
-          // 平均点を計算
-          const averages = {
-            section_a: testScores.reduce((sum, score) => sum + (score.section_a || 0), 0) / studentCount,
-            section_b: testScores.reduce((sum, score) => sum + (score.section_b || 0), 0) / studentCount,
-            section_c: testScores.reduce((sum, score) => sum + (score.section_c || 0), 0) / studentCount,
-            section_d: testScores.reduce((sum, score) => sum + (score.section_d || 0), 0) / studentCount,
-            section_ad: testScores.reduce((sum, score) => sum + (score.section_ad || 0), 0) / studentCount,
-            section_bc: testScores.reduce((sum, score) => sum + (score.section_bc || 0), 0) / studentCount,
-            total_score: testScores.reduce((sum, score) => sum + (score.total_score || 0), 0) / studentCount,
-          }
+          // 全体、昼間部、夜間部の平均点を計算
+          const allAverages = calculateAverages(testScores, "all")
+          const dayAverages = calculateAverages(testScores, "day")
+          const eveningAverages = calculateAverages(testScores, "evening")
 
-          // 合格者数と合格率を計算
-          const passingStats = calculatePassingStats(testScores)
+          // 全体、昼間部、夜間部の合格状況を計算
+          const allPassingStats = calculatePassingStats(testScores, "all")
+          const dayPassingStats = calculatePassingStats(testScores, "day")
+          const eveningPassingStats = calculatePassingStats(testScores, "evening")
 
           return (
             <AccordionItem key={key} value={key}>
@@ -188,10 +248,10 @@ export default function TestResultsList({ scores }: TestResultsListProps) {
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Users className="h-4 w-4" />
-                    <span>{studentCount}名</span>
+                    <span>{allAverages.count}名</span>
                   </div>
                   <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                    合格率 {passingStats.totalPassRate}%
+                    合格率 {allPassingStats.totalPassRate}%
                   </Badge>
                 </div>
               </AccordionTrigger>
@@ -201,101 +261,326 @@ export default function TestResultsList({ scores }: TestResultsListProps) {
                     <CardTitle className="text-sm font-medium">試験概要</CardTitle>
                   </CardHeader>
                   <CardContent className="py-2">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                      <div className="bg-muted/30 p-3 rounded-md">
-                        <div className="text-xs text-muted-foreground mb-1">平均点</div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <div className="bg-white p-2 rounded-md shadow-sm">
+                    <Tabs defaultValue="all" className="mb-4">
+                      <TabsList>
+                        <TabsTrigger value="all" onClick={() => setViewGroup("all")}>
+                          <Users className="h-4 w-4 mr-1" />
+                          全体 ({allAverages.count}名)
+                        </TabsTrigger>
+                        <TabsTrigger value="day" onClick={() => setViewGroup("day")}>
+                          <Sun className="h-4 w-4 mr-1" />
+                          昼間部 ({dayAverages.count}名)
+                        </TabsTrigger>
+                        <TabsTrigger value="evening" onClick={() => setViewGroup("evening")}>
+                          <Moon className="h-4 w-4 mr-1" />
+                          夜間部 ({eveningAverages.count}名)
+                        </TabsTrigger>
+                      </TabsList>
+
+                      <TabsContent value="all" className="mt-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                          <div className="bg-muted/30 p-3 rounded-md">
+                            <div className="text-xs text-muted-foreground mb-1">平均点</div>
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="bg-white p-2 rounded-md shadow-sm">
+                                <div className="text-xs text-muted-foreground">AD問題</div>
+                                <div className="font-medium">{allAverages.section_ad.toFixed(1)}</div>
+                              </div>
+                              <div className="bg-white p-2 rounded-md shadow-sm">
+                                <div className="text-xs text-muted-foreground">BC問題</div>
+                                <div className="font-medium">{allAverages.section_bc.toFixed(1)}</div>
+                              </div>
+                              <div className="bg-white p-2 rounded-md shadow-sm">
+                                <div className="text-xs text-muted-foreground">合計</div>
+                                <div className="font-medium">{allAverages.total_score.toFixed(1)}</div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="bg-muted/30 p-3 rounded-md">
+                            <div className="text-xs text-muted-foreground mb-1">合格基準</div>
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="bg-white p-2 rounded-md shadow-sm">
+                                <div className="text-xs text-muted-foreground">AD問題</div>
+                                <div className="font-medium text-primary">{PASSING_SCORE_AD}点以上</div>
+                              </div>
+                              <div className="bg-white p-2 rounded-md shadow-sm">
+                                <div className="text-xs text-muted-foreground">BC問題</div>
+                                <div className="font-medium text-primary">{PASSING_SCORE_BC}点以上</div>
+                              </div>
+                              <div className="bg-white p-2 rounded-md shadow-sm">
+                                <div className="text-xs text-muted-foreground">判定</div>
+                                <div className="font-medium text-primary">両方必要</div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="bg-muted/30 p-3 rounded-md">
+                            <div className="text-xs text-muted-foreground mb-1">合格状況</div>
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="bg-white p-2 rounded-md shadow-sm">
+                                <div className="text-xs text-muted-foreground">AD問題</div>
+                                <div className="font-medium text-green-600">{allPassingStats.adPassRate}%</div>
+                                <div className="text-xs">
+                                  {allPassingStats.adPassCount}/{allAverages.count}名
+                                </div>
+                              </div>
+                              <div className="bg-white p-2 rounded-md shadow-sm">
+                                <div className="text-xs text-muted-foreground">BC問題</div>
+                                <div className="font-medium text-green-600">{allPassingStats.bcPassRate}%</div>
+                                <div className="text-xs">
+                                  {allPassingStats.bcPassCount}/{allAverages.count}名
+                                </div>
+                              </div>
+                              <div className="bg-white p-2 rounded-md shadow-sm">
+                                <div className="text-xs text-muted-foreground">総合</div>
+                                <div className="font-medium text-green-600">{allPassingStats.totalPassRate}%</div>
+                                <div className="text-xs">
+                                  {allPassingStats.totalPassCount}/{allAverages.count}名
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-7 gap-2 text-sm">
+                          <div className="bg-muted/50 p-2 rounded-md">
+                            <div className="text-xs text-muted-foreground">A問題</div>
+                            <div className="font-medium">{allAverages.section_a.toFixed(1)}</div>
+                          </div>
+                          <div className="bg-muted/50 p-2 rounded-md">
+                            <div className="text-xs text-muted-foreground">B問題</div>
+                            <div className="font-medium">{allAverages.section_b.toFixed(1)}</div>
+                          </div>
+                          <div className="bg-muted/50 p-2 rounded-md">
+                            <div className="text-xs text-muted-foreground">C問題</div>
+                            <div className="font-medium">{allAverages.section_c.toFixed(1)}</div>
+                          </div>
+                          <div className="bg-muted/50 p-2 rounded-md">
+                            <div className="text-xs text-muted-foreground">D問題</div>
+                            <div className="font-medium">{allAverages.section_d.toFixed(1)}</div>
+                          </div>
+                          <div className="bg-muted/50 p-2 rounded-md">
                             <div className="text-xs text-muted-foreground">AD問題</div>
-                            <div className="font-medium">{averages.section_ad.toFixed(1)}</div>
+                            <div className="font-medium">{allAverages.section_ad.toFixed(1)}</div>
                           </div>
-                          <div className="bg-white p-2 rounded-md shadow-sm">
+                          <div className="bg-muted/50 p-2 rounded-md">
                             <div className="text-xs text-muted-foreground">BC問題</div>
-                            <div className="font-medium">{averages.section_bc.toFixed(1)}</div>
+                            <div className="font-medium">{allAverages.section_bc.toFixed(1)}</div>
                           </div>
-                          <div className="bg-white p-2 rounded-md shadow-sm">
+                          <div className="bg-primary/10 p-2 rounded-md">
                             <div className="text-xs text-muted-foreground">合計</div>
-                            <div className="font-medium">{averages.total_score.toFixed(1)}</div>
+                            <div className="font-medium">{allAverages.total_score.toFixed(1)}</div>
                           </div>
                         </div>
-                      </div>
+                      </TabsContent>
 
-                      <div className="bg-muted/30 p-3 rounded-md">
-                        <div className="text-xs text-muted-foreground mb-1">合格基準</div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <div className="bg-white p-2 rounded-md shadow-sm">
+                      <TabsContent value="day" className="mt-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                          <div className="bg-muted/30 p-3 rounded-md">
+                            <div className="text-xs text-muted-foreground mb-1">
+                              <span className="flex items-center">
+                                <Sun className="h-4 w-4 mr-1" />
+                                昼間部平均点
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="bg-white p-2 rounded-md shadow-sm">
+                                <div className="text-xs text-muted-foreground">AD問題</div>
+                                <div className="font-medium">{dayAverages.section_ad.toFixed(1)}</div>
+                              </div>
+                              <div className="bg-white p-2 rounded-md shadow-sm">
+                                <div className="text-xs text-muted-foreground">BC問題</div>
+                                <div className="font-medium">{dayAverages.section_bc.toFixed(1)}</div>
+                              </div>
+                              <div className="bg-white p-2 rounded-md shadow-sm">
+                                <div className="text-xs text-muted-foreground">合計</div>
+                                <div className="font-medium">{dayAverages.total_score.toFixed(1)}</div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="bg-muted/30 p-3 rounded-md">
+                            <div className="text-xs text-muted-foreground mb-1">合格基準</div>
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="bg-white p-2 rounded-md shadow-sm">
+                                <div className="text-xs text-muted-foreground">AD問題</div>
+                                <div className="font-medium text-primary">{PASSING_SCORE_AD}点以上</div>
+                              </div>
+                              <div className="bg-white p-2 rounded-md shadow-sm">
+                                <div className="text-xs text-muted-foreground">BC問題</div>
+                                <div className="font-medium text-primary">{PASSING_SCORE_BC}点以上</div>
+                              </div>
+                              <div className="bg-white p-2 rounded-md shadow-sm">
+                                <div className="text-xs text-muted-foreground">判定</div>
+                                <div className="font-medium text-primary">両方必要</div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="bg-muted/30 p-3 rounded-md">
+                            <div className="text-xs text-muted-foreground mb-1">昼間部合格状況</div>
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="bg-white p-2 rounded-md shadow-sm">
+                                <div className="text-xs text-muted-foreground">AD問題</div>
+                                <div className="font-medium text-green-600">{dayPassingStats.adPassRate}%</div>
+                                <div className="text-xs">
+                                  {dayPassingStats.adPassCount}/{dayAverages.count}名
+                                </div>
+                              </div>
+                              <div className="bg-white p-2 rounded-md shadow-sm">
+                                <div className="text-xs text-muted-foreground">BC問題</div>
+                                <div className="font-medium text-green-600">{dayPassingStats.bcPassRate}%</div>
+                                <div className="text-xs">
+                                  {dayPassingStats.bcPassCount}/{dayAverages.count}名
+                                </div>
+                              </div>
+                              <div className="bg-white p-2 rounded-md shadow-sm">
+                                <div className="text-xs text-muted-foreground">総合</div>
+                                <div className="font-medium text-green-600">{dayPassingStats.totalPassRate}%</div>
+                                <div className="text-xs">
+                                  {dayPassingStats.totalPassCount}/{dayAverages.count}名
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-7 gap-2 text-sm">
+                          <div className="bg-muted/50 p-2 rounded-md">
+                            <div className="text-xs text-muted-foreground">A問題</div>
+                            <div className="font-medium">{dayAverages.section_a.toFixed(1)}</div>
+                          </div>
+                          <div className="bg-muted/50 p-2 rounded-md">
+                            <div className="text-xs text-muted-foreground">B問題</div>
+                            <div className="font-medium">{dayAverages.section_b.toFixed(1)}</div>
+                          </div>
+                          <div className="bg-muted/50 p-2 rounded-md">
+                            <div className="text-xs text-muted-foreground">C問題</div>
+                            <div className="font-medium">{dayAverages.section_c.toFixed(1)}</div>
+                          </div>
+                          <div className="bg-muted/50 p-2 rounded-md">
+                            <div className="text-xs text-muted-foreground">D問題</div>
+                            <div className="font-medium">{dayAverages.section_d.toFixed(1)}</div>
+                          </div>
+                          <div className="bg-muted/50 p-2 rounded-md">
                             <div className="text-xs text-muted-foreground">AD問題</div>
-                            <div className="font-medium text-primary">{PASSING_SCORE_AD}点以上</div>
+                            <div className="font-medium">{dayAverages.section_ad.toFixed(1)}</div>
                           </div>
-                          <div className="bg-white p-2 rounded-md shadow-sm">
+                          <div className="bg-muted/50 p-2 rounded-md">
                             <div className="text-xs text-muted-foreground">BC問題</div>
-                            <div className="font-medium text-primary">{PASSING_SCORE_BC}点以上</div>
+                            <div className="font-medium">{dayAverages.section_bc.toFixed(1)}</div>
                           </div>
-                          <div className="bg-white p-2 rounded-md shadow-sm">
-                            <div className="text-xs text-muted-foreground">判定</div>
-                            <div className="font-medium text-primary">両方必要</div>
+                          <div className="bg-primary/10 p-2 rounded-md">
+                            <div className="text-xs text-muted-foreground">合計</div>
+                            <div className="font-medium">{dayAverages.total_score.toFixed(1)}</div>
                           </div>
                         </div>
-                      </div>
+                      </TabsContent>
 
-                      <div className="bg-muted/30 p-3 rounded-md">
-                        <div className="text-xs text-muted-foreground mb-1">合格状況</div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <div className="bg-white p-2 rounded-md shadow-sm">
+                      <TabsContent value="evening" className="mt-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                          <div className="bg-muted/30 p-3 rounded-md">
+                            <div className="text-xs text-muted-foreground mb-1">
+                              <span className="flex items-center">
+                                <Moon className="h-4 w-4 mr-1" />
+                                夜間部平均点
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="bg-white p-2 rounded-md shadow-sm">
+                                <div className="text-xs text-muted-foreground">AD問題</div>
+                                <div className="font-medium">{eveningAverages.section_ad.toFixed(1)}</div>
+                              </div>
+                              <div className="bg-white p-2 rounded-md shadow-sm">
+                                <div className="text-xs text-muted-foreground">BC問題</div>
+                                <div className="font-medium">{eveningAverages.section_bc.toFixed(1)}</div>
+                              </div>
+                              <div className="bg-white p-2 rounded-md shadow-sm">
+                                <div className="text-xs text-muted-foreground">合計</div>
+                                <div className="font-medium">{eveningAverages.total_score.toFixed(1)}</div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="bg-muted/30 p-3 rounded-md">
+                            <div className="text-xs text-muted-foreground mb-1">合格基準</div>
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="bg-white p-2 rounded-md shadow-sm">
+                                <div className="text-xs text-muted-foreground">AD問題</div>
+                                <div className="font-medium text-primary">{PASSING_SCORE_AD}点以上</div>
+                              </div>
+                              <div className="bg-white p-2 rounded-md shadow-sm">
+                                <div className="text-xs text-muted-foreground">BC問題</div>
+                                <div className="font-medium text-primary">{PASSING_SCORE_BC}点以上</div>
+                              </div>
+                              <div className="bg-white p-2 rounded-md shadow-sm">
+                                <div className="text-xs text-muted-foreground">判定</div>
+                                <div className="font-medium text-primary">両方必要</div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="bg-muted/30 p-3 rounded-md">
+                            <div className="text-xs text-muted-foreground mb-1">夜間部合格状況</div>
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="bg-white p-2 rounded-md shadow-sm">
+                                <div className="text-xs text-muted-foreground">AD問題</div>
+                                <div className="font-medium text-green-600">{eveningPassingStats.adPassRate}%</div>
+                                <div className="text-xs">
+                                  {eveningPassingStats.adPassCount}/{eveningAverages.count}名
+                                </div>
+                              </div>
+                              <div className="bg-white p-2 rounded-md shadow-sm">
+                                <div className="text-xs text-muted-foreground">BC問題</div>
+                                <div className="font-medium text-green-600">{eveningPassingStats.bcPassRate}%</div>
+                                <div className="text-xs">
+                                  {eveningPassingStats.bcPassCount}/{eveningAverages.count}名
+                                </div>
+                              </div>
+                              <div className="bg-white p-2 rounded-md shadow-sm">
+                                <div className="text-xs text-muted-foreground">総合</div>
+                                <div className="font-medium text-green-600">{eveningPassingStats.totalPassRate}%</div>
+                                <div className="text-xs">
+                                  {eveningPassingStats.totalPassCount}/{eveningAverages.count}名
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-7 gap-2 text-sm">
+                          <div className="bg-muted/50 p-2 rounded-md">
+                            <div className="text-xs text-muted-foreground">A問題</div>
+                            <div className="font-medium">{eveningAverages.section_a.toFixed(1)}</div>
+                          </div>
+                          <div className="bg-muted/50 p-2 rounded-md">
+                            <div className="text-xs text-muted-foreground">B問題</div>
+                            <div className="font-medium">{eveningAverages.section_b.toFixed(1)}</div>
+                          </div>
+                          <div className="bg-muted/50 p-2 rounded-md">
+                            <div className="text-xs text-muted-foreground">C問題</div>
+                            <div className="font-medium">{eveningAverages.section_c.toFixed(1)}</div>
+                          </div>
+                          <div className="bg-muted/50 p-2 rounded-md">
+                            <div className="text-xs text-muted-foreground">D問題</div>
+                            <div className="font-medium">{eveningAverages.section_d.toFixed(1)}</div>
+                          </div>
+                          <div className="bg-muted/50 p-2 rounded-md">
                             <div className="text-xs text-muted-foreground">AD問題</div>
-                            <div className="font-medium text-green-600">{passingStats.adPassRate}%</div>
-                            <div className="text-xs">
-                              {passingStats.adPassCount}/{studentCount}名
-                            </div>
+                            <div className="font-medium">{eveningAverages.section_ad.toFixed(1)}</div>
                           </div>
-                          <div className="bg-white p-2 rounded-md shadow-sm">
+                          <div className="bg-muted/50 p-2 rounded-md">
                             <div className="text-xs text-muted-foreground">BC問題</div>
-                            <div className="font-medium text-green-600">{passingStats.bcPassRate}%</div>
-                            <div className="text-xs">
-                              {passingStats.bcPassCount}/{studentCount}名
-                            </div>
+                            <div className="font-medium">{eveningAverages.section_bc.toFixed(1)}</div>
                           </div>
-                          <div className="bg-white p-2 rounded-md shadow-sm">
-                            <div className="text-xs text-muted-foreground">総合</div>
-                            <div className="font-medium text-green-600">{passingStats.totalPassRate}%</div>
-                            <div className="text-xs">
-                              {passingStats.totalPassCount}/{studentCount}名
-                            </div>
+                          <div className="bg-primary/10 p-2 rounded-md">
+                            <div className="text-xs text-muted-foreground">合計</div>
+                            <div className="font-medium">{eveningAverages.total_score.toFixed(1)}</div>
                           </div>
                         </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-7 gap-2 text-sm">
-                      <div className="bg-muted/50 p-2 rounded-md">
-                        <div className="text-xs text-muted-foreground">A問題</div>
-                        <div className="font-medium">{averages.section_a.toFixed(1)}</div>
-                      </div>
-                      <div className="bg-muted/50 p-2 rounded-md">
-                        <div className="text-xs text-muted-foreground">B問題</div>
-                        <div className="font-medium">{averages.section_b.toFixed(1)}</div>
-                      </div>
-                      <div className="bg-muted/50 p-2 rounded-md">
-                        <div className="text-xs text-muted-foreground">C問題</div>
-                        <div className="font-medium">{averages.section_c.toFixed(1)}</div>
-                      </div>
-                      <div className="bg-muted/50 p-2 rounded-md">
-                        <div className="text-xs text-muted-foreground">D問題</div>
-                        <div className="font-medium">{averages.section_d.toFixed(1)}</div>
-                      </div>
-                      <div className="bg-muted/50 p-2 rounded-md">
-                        <div className="text-xs text-muted-foreground">AD問題</div>
-                        <div className="font-medium">{averages.section_ad.toFixed(1)}</div>
-                      </div>
-                      <div className="bg-muted/50 p-2 rounded-md">
-                        <div className="text-xs text-muted-foreground">BC問題</div>
-                        <div className="font-medium">{averages.section_bc.toFixed(1)}</div>
-                      </div>
-                      <div className="bg-primary/10 p-2 rounded-md">
-                        <div className="text-xs text-muted-foreground">合計</div>
-                        <div className="font-medium">{averages.total_score.toFixed(1)}</div>
-                      </div>
-                    </div>
+                      </TabsContent>
+                    </Tabs>
                   </CardContent>
                 </Card>
 
@@ -392,44 +677,53 @@ export default function TestResultsList({ scores }: TestResultsListProps) {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {sortedScores.map((score) => {
-                        const { adPassing, bcPassing, allPassing } = isPassingScore(score)
+                      {sortedScores
+                        .filter((score) => viewGroup === "all" || getStudentGroup(score.student_id) === viewGroup)
+                        .map((score) => {
+                          const { adPassing, bcPassing, allPassing } = isPassingScore(score)
+                          const studentGroup = getStudentGroup(score.student_id)
 
-                        return (
-                          <TableRow key={score.id}>
-                            <TableCell className="font-medium">{score.student_id}</TableCell>
-                            <TableCell>{score.name || "名前なし"}</TableCell>
-                            <TableCell className="text-right">{score.section_a || "-"}</TableCell>
-                            <TableCell className="text-right">{score.section_b || "-"}</TableCell>
-                            <TableCell className="text-right">{score.section_c || "-"}</TableCell>
-                            <TableCell className="text-right">{score.section_d || "-"}</TableCell>
-                            <TableCell
-                              className={`text-right font-medium ${adPassing ? "bg-green-50 text-green-700" : ""}`}
-                            >
-                              <div className="flex items-center justify-end gap-1">
-                                {score.section_ad || "-"}
-                                {adPassing && <CheckCircle className="h-4 w-4 text-green-500" />}
-                              </div>
-                            </TableCell>
-                            <TableCell
-                              className={`text-right font-medium ${bcPassing ? "bg-green-50 text-green-700" : ""}`}
-                            >
-                              <div className="flex items-center justify-end gap-1">
-                                {score.section_bc || "-"}
-                                {bcPassing && <CheckCircle className="h-4 w-4 text-green-500" />}
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-right font-medium">{score.total_score || "-"}</TableCell>
-                            <TableCell className="text-center">
-                              {allPassing ? (
-                                <Badge className="bg-green-500">合格</Badge>
-                              ) : (
-                                <Badge variant="destructive">不合格</Badge>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })}
+                          return (
+                            <TableRow key={score.id}>
+                              <TableCell className="font-medium">
+                                <div className="flex items-center gap-1">
+                                  {score.student_id}
+                                  {studentGroup === "day" && <Sun className="h-3 w-3 text-amber-500" />}
+                                  {studentGroup === "evening" && <Moon className="h-3 w-3 text-blue-500" />}
+                                </div>
+                              </TableCell>
+                              <TableCell>{score.name || "名前なし"}</TableCell>
+                              <TableCell className="text-right">{score.section_a || "-"}</TableCell>
+                              <TableCell className="text-right">{score.section_b || "-"}</TableCell>
+                              <TableCell className="text-right">{score.section_c || "-"}</TableCell>
+                              <TableCell className="text-right">{score.section_d || "-"}</TableCell>
+                              <TableCell
+                                className={`text-right font-medium ${adPassing ? "bg-green-50 text-green-700" : ""}`}
+                              >
+                                <div className="flex items-center justify-end gap-1">
+                                  {score.section_ad || "-"}
+                                  {adPassing && <CheckCircle className="h-4 w-4 text-green-500" />}
+                                </div>
+                              </TableCell>
+                              <TableCell
+                                className={`text-right font-medium ${bcPassing ? "bg-green-50 text-green-700" : ""}`}
+                              >
+                                <div className="flex items-center justify-end gap-1">
+                                  {score.section_bc || "-"}
+                                  {bcPassing && <CheckCircle className="h-4 w-4 text-green-500" />}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right font-medium">{score.total_score || "-"}</TableCell>
+                              <TableCell className="text-center">
+                                {allPassing ? (
+                                  <Badge className="bg-green-500">合格</Badge>
+                                ) : (
+                                  <Badge variant="destructive">不合格</Badge>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
                     </TableBody>
                   </Table>
                 </div>
