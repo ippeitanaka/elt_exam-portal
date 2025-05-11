@@ -207,6 +207,23 @@ export default function TestResultsImport() {
             </Alert>
           )}
 
+          {importResults &&
+            importResults.errors &&
+            importResults.errors.some((error) => error.includes("既に存在する")) && (
+              <Alert className="border-amber-500 bg-amber-50">
+                <AlertCircle className="h-4 w-4 text-amber-500" />
+                <AlertTitle>既存データのスキップ</AlertTitle>
+                <AlertDescription>
+                  <p className="mb-2">
+                    同じ学生ID、テスト名、テスト日の組み合わせのデータは既に存在するためスキップしました。
+                  </p>
+                  <p className="text-sm">
+                    既存データを更新したい場合は、先に該当するテストデータを削除してから再インポートしてください。
+                  </p>
+                </AlertDescription>
+              </Alert>
+            )}
+
           {importResults && importResults.results && importResults.results.length > 0 && (
             <Alert className="border-green-500 bg-green-50">
               <CheckCircle className="h-4 w-4 text-green-500" />

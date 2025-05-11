@@ -116,29 +116,71 @@ export async function POST(request: Request) {
     // バッチデータがある場合は一括挿入
     if (batchData.length > 0) {
       try {
-        // サービスロールを使用してRLSをバイパス
-        const { data, error } = await supabase.from("test_scores").insert(batchData).select()
+        // 各レコードについて、同じstudent_id、test_name、test_dateの組み合わせが既に存在するか確認
+        const existingRecords = []
+        const newRecords = []
 
-        if (error) {
-          console.error("バッチ挿入エラー:", error)
-          return NextResponse.json(
-            {
-              error: "テスト結果の挿入に失敗しました",
-              details: error.message,
-              code: error.code,
-              hint: error.hint,
-            },
-            { status: 500 },
-          )
+        for (const record of batchData) {
+          // 既存レコードを確認
+          const { data: existingData, error: checkError } = await supabase
+            .from("test_scores")
+            .select("id, student_id")
+            .eq("student_id", record.student_id)
+            .eq("test_name", record.test_name)
+            .eq("test_date", record.test_date)
+
+          if (checkError) {
+            console.error("既存データ確認エラー:", checkError)
+            continue
+          }
+
+          if (existingData && existingData.length > 0) {
+            // 既に同じ学生の同じテストの結果が存在する場合
+            existingRecords.push({
+              studentId: record.student_id,
+              testName: record.test_name,
+              testDate: record.test_date,
+            })
+          } else {
+            // 新規レコードとして追加
+            newRecords.push(record)
+          }
         }
 
-        // 成功した結果を追加
-        for (const item of data) {
-          results.push({
-            studentId: item.student_id,
-            name: item.name,
-            resultId: item.id,
-          })
+        // 新規レコードのみを挿入
+        if (newRecords.length > 0) {
+          const { data, error } = await supabase.from("test_scores").insert(newRecords).select()
+
+          if (error) {
+            console.error("バッチ挿入エラー:", error)
+            return NextResponse.json(
+              {
+                error: "テスト結果の挿入に失敗しました",
+                details: error.message,
+                code: error.code,
+                hint: error.hint,
+              },
+              { status: 500 },
+            )
+          }
+
+          // 成功した結果を追加
+          for (const item of data) {
+            results.push({
+              studentId: item.student_id,
+              name: item.name,
+              resultId: item.id,
+            })
+          }
+        }
+
+        // 既存レコードがあった場合は警告を追加
+        if (existingRecords.length > 0) {
+          for (const record of existingRecords) {
+            errors.push(
+              `学生ID: ${record.studentId}、テスト: ${record.testName}（${record.testDate}）のデータは既に存在するためスキップしました`,
+            )
+          }
         }
       } catch (batchError) {
         console.error("バッチ処理エラー:", batchError)
