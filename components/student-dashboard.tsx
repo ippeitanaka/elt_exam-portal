@@ -642,7 +642,8 @@ export default function StudentDashboard({
                     <div className="font-medium text-primary">両方必要</div>
                   </div>
                 </div>
-              </CardContent>
+              </div>
+            </CardContent>
           </Card>
         </motion.div>
       </TabsContent>
@@ -1281,9 +1282,9 @@ export default function StudentDashboard({
                     </div>
                   </div>
                   <div className="mt-3">
-                    <div className="text-xs text-gray-500 flex justify-between mt-1">
-                      <span>実績達成回数: {totalAchievements}回</span>
-                      <span>次のレベルまであと1回の実績達成！</span>
+                    <div className="text-xs text-gray-500 flex justify-between mb-1">
+                      <span>現在のレベル</span>
+                      <span>次のレベル</span>
                     </div>
                     <div className="progress-bar">
                       <div
@@ -1293,11 +1294,7 @@ export default function StudentDashboard({
                     </div>
                     <div className="text-xs text-gray-500 flex justify-between mt-1">
                       <span>実績達成回数: {totalAchievements}回</span>
-                      {studyLevel < 10 ? (
-                        <span>あと{10 - studyLevel}回の実績達成でレベルMAX！</span>
-                      ) : (
-                        <span>最大レベル達成！おめでとう！</span>
-                      )}
+                      <span>次のレベルまであと1回の実績達成！</span>
                     </div>
                   </div>
                 </div>
