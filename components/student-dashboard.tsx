@@ -283,7 +283,7 @@ export default function StudentDashboard({
     achievementCounts.consecutivePassingCount +
     achievementCounts.masterCount
 
-  const studyLevel = Math.min(10, Math.max(1, totalAchievements))
+  const studyLevel = Math.max(1, totalAchievements)
 
   // バッジを生成する関数
   const renderBadges = (count: number, color: string) => {
@@ -1282,14 +1282,14 @@ export default function StudentDashboard({
                     </div>
                   </div>
                   <div className="mt-3">
-                    <div className="text-xs text-gray-500 flex justify-between mb-1">
-                      <span>現在のレベル</span>
-                      <span>次のレベル</span>
+                    <div className="text-xs text-gray-500 flex justify-between mt-1">
+                      <span>実績達成回数: {totalAchievements}回</span>
+                      <span>次のレベルまであと1回の実績達成！</span>
                     </div>
                     <div className="progress-bar">
                       <div
                         className="progress-value bg-gradient-to-r from-blue-400 to-primary"
-                        style={{ width: `${studyLevel < 10 ? 100 : 100}%` }}
+                        style={{ width: `100%` }}
                       ></div>
                     </div>
                     <div className="text-xs text-gray-500 flex justify-between mt-1">
