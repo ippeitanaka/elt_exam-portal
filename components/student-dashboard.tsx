@@ -642,8 +642,7 @@ export default function StudentDashboard({
                     <div className="font-medium text-primary">両方必要</div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
+              </CardContent>
           </Card>
         </motion.div>
       </TabsContent>
