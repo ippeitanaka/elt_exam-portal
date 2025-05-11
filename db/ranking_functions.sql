@@ -58,7 +58,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 学生の総合順位を取得する関数
+-- 学生の総合順位を取得する関数も修正
 CREATE OR REPLACE FUNCTION get_student_total_rank(
   p_student_id TEXT
 )
@@ -68,18 +68,21 @@ RETURNS TABLE (
 BEGIN
   RETURN QUERY
   SELECT 
-    rank
+    tr.rank
   FROM (
     SELECT 
-      student_id,
-      RANK() OVER (ORDER BY AVG(total_score) DESC) as rank
+      s.student_id,
+      COALESCE(AVG(ts.total_score), 0) as avg_score,
+      RANK() OVER (ORDER BY COALESCE(AVG(ts.total_score), 0) DESC) as rank
     FROM 
-      test_scores
+      students s
+    LEFT JOIN 
+      test_scores ts ON s.student_id = ts.student_id
     GROUP BY 
-      student_id
-  ) as rankings
+      s.student_id
+  ) as tr
   WHERE 
-    student_id = p_student_id;
+    tr.student_id = p_student_id;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -113,7 +116,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 総合ランキングを取得する関数
+-- 総合ランキングを取得する関数を修正
+-- 各学生のすべてのテスト結果の平均点に基づいて順位を計算
+
 CREATE OR REPLACE FUNCTION get_total_rankings()
 RETURNS TABLE (
   student_id TEXT,
@@ -124,17 +129,17 @@ RETURNS TABLE (
 BEGIN
   RETURN QUERY
   SELECT 
-    ts.student_id,
+    s.student_id,
     s.name,
-    AVG(ts.total_score) as avg_score,
-    RANK() OVER (ORDER BY AVG(ts.total_score) DESC) as rank
+    COALESCE(AVG(ts.total_score), 0) as avg_score,
+    RANK() OVER (ORDER BY COALESCE(AVG(ts.total_score), 0) DESC) as rank
   FROM 
-    test_scores ts
-  JOIN 
-    students s ON ts.student_id = s.student_id
+    students s
+  LEFT JOIN 
+    test_scores ts ON s.student_id = ts.student_id
   GROUP BY 
-    ts.student_id, s.name
+    s.student_id, s.name
   ORDER BY 
-    rank;
+    rank, s.student_id;
 END;
 $$ LANGUAGE plpgsql;
