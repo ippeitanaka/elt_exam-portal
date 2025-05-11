@@ -17,6 +17,7 @@ export type TestScore = {
   rank?: number
 }
 
+// TestScoreWithStats型にavg_rankプロパティを追加
 export type TestScoreWithStats = TestScore & {
   avg_section_a: number
   avg_section_b: number
@@ -27,6 +28,7 @@ export type TestScoreWithStats = TestScore & {
   avg_total_score: number
   rank: number
   total_rank: number
+  avg_rank?: number
   previous_scores?: {
     section_a_change: number
     section_b_change: number
@@ -127,6 +129,7 @@ export async function getStudentScoresWithStats(studentId: string): Promise<Test
 
     // 4. 総合順位を計算
     let totalRank = 0
+    let avgRank = 0
     try {
       console.log(`Getting total rank for student ${studentId}`)
 
@@ -138,6 +141,7 @@ export async function getStudentScoresWithStats(studentId: string): Promise<Test
         console.error("総合順位取得エラー:", totalRankError)
       } else if (totalRankData && totalRankData.length > 0) {
         totalRank = totalRankData[0].rank
+        avgRank = totalRankData[0].avg_rank
       }
     } catch (err) {
       console.error(`Error getting total rank for student ${studentId}:`, err)
@@ -184,6 +188,7 @@ export async function getStudentScoresWithStats(studentId: string): Promise<Test
         ...avgData,
         rank: testRankings[testKey] || 0,
         total_rank: totalRank,
+        avg_rank: avgRank,
         previous_scores: previousScoreData,
       }
     })

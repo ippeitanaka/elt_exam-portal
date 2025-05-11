@@ -60,34 +60,27 @@ const sectionNames = {
 const achievements = [
   {
     id: 1,
-    name: "初めての模試",
-    description: "最初の模擬試験を受けました",
-    icon: <Star className="h-5 w-5" />,
-    color: "bg-yellow-500",
-  },
-  {
-    id: 2,
     name: "合格ライン突破",
     description: "合格ラインを超えました",
     icon: <Award className="h-5 w-5" />,
     color: "bg-green-500",
   },
   {
-    id: 3,
+    id: 2,
     name: "トップ10入り",
     description: "ランキングトップ10に入りました",
     icon: <Medal className="h-5 w-5" />,
     color: "bg-blue-500",
   },
   {
-    id: 4,
+    id: 3,
     name: "連続合格",
     description: "3回連続で合格ラインを超えました",
     icon: <Activity className="h-5 w-5" />,
     color: "bg-purple-500",
   },
   {
-    id: 5,
+    id: 4,
     name: "学習マスター",
     description: "全ての分野で平均点以上を獲得",
     icon: <BookOpen className="h-5 w-5" />,
@@ -230,27 +223,76 @@ export default function StudentDashboard({
     },
   ]
 
-  // アチーブメントの計算
+  // 実績の達成回数を計算
+  const calculateAchievementCounts = () => {
+    // 合格ライン突破回数
+    const passingCount = scores.filter((score) => isPassingScore(score)).length
+
+    // トップ10入り回数
+    const top10Count = scores.filter((score) => score.rank <= 10).length
+
+    // 連続合格回数（最大の連続回数を計算）
+    let maxConsecutivePassing = 0
+    let currentConsecutive = 0
+    const sortedByDate = [...scores].sort((a, b) => new Date(a.test_date).getTime() - new Date(b.test_date).getTime())
+
+    sortedByDate.forEach((score) => {
+      if (isPassingScore(score)) {
+        currentConsecutive++
+        maxConsecutivePassing = Math.max(maxConsecutivePassing, Math.floor(currentConsecutive / 3))
+      } else {
+        currentConsecutive = 0
+      }
+    })
+
+    // 学習マスター回数（全分野で平均以上）
+    const masterCount = scores.filter((score) =>
+      Object.keys(sectionNames).every((section) => (score as any)[section] > (score as any)[`avg_${section}`]),
+    ).length
+
+    return {
+      passingCount,
+      top10Count,
+      consecutivePassingCount: maxConsecutivePassing,
+      masterCount,
+    }
+  }
+
+  const achievementCounts = calculateAchievementCounts()
+
+  // アチーブメントの計算（達成回数付き）
   const unlockedAchievements = [
-    // 初めての模試
-    { ...achievements[0], unlocked: scores.length > 0 },
     // 合格ライン突破
-    { ...achievements[1], unlocked: scores.some((score) => isPassingScore(score)) },
+    { ...achievements[0], unlocked: achievementCounts.passingCount > 0, count: achievementCounts.passingCount },
     // トップ10入り
-    { ...achievements[2], unlocked: scores.some((score) => score.rank <= 10) },
+    { ...achievements[1], unlocked: achievementCounts.top10Count > 0, count: achievementCounts.top10Count },
     // 連続合格
-    { ...achievements[3], unlocked: scores.length >= 3 && scores.slice(0, 3).every((score) => isPassingScore(score)) },
-    // 学習マスター
     {
-      ...achievements[4],
-      unlocked: Object.keys(sectionNames).every(
-        (section) => (latestScore as any)[section] > (latestScore as any)[`avg_${section}`],
-      ),
+      ...achievements[2],
+      unlocked: achievementCounts.consecutivePassingCount > 0,
+      count: achievementCounts.consecutivePassingCount,
     },
+    // 学習マスター
+    { ...achievements[3], unlocked: achievementCounts.masterCount > 0, count: achievementCounts.masterCount },
   ]
 
-  // 学習レベルの計算（1〜10）
-  const studyLevel = Math.min(10, Math.max(1, Math.floor(scores.length / 2) + 1))
+  // 学習レベルの計算（実績達成回数に基づく）
+  const totalAchievements =
+    achievementCounts.passingCount +
+    achievementCounts.top10Count +
+    achievementCounts.consecutivePassingCount +
+    achievementCounts.masterCount
+
+  const studyLevel = Math.min(10, Math.max(1, totalAchievements))
+
+  // バッジを生成する関数
+  const renderBadges = (count: number, color: string) => {
+    return Array.from({ length: count }).map((_, index) => (
+      <div key={index} className={`w-5 h-5 rounded-full ${color} flex items-center justify-center text-white text-xs`}>
+        <Star className="h-3 w-3" />
+      </div>
+    ))
+  }
 
   return (
     <Tabs defaultValue="overview" onValueChange={setActiveTab}>
@@ -287,6 +329,7 @@ export default function StudentDashboard({
         </TabsTrigger>
       </TabsList>
 
+      {/* 概要タブ */}
       <TabsContent value="overview" className="mt-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <Card className="card-decorated bg-gradient-to-br from-white to-blue-50">
@@ -361,12 +404,18 @@ export default function StudentDashboard({
                           <p className="text-3xl font-bold">{latestScore.total_rank || "-"}位</p>
                         </div>
                         <div className="mt-2">
+                          {latestScore.avg_rank !== undefined && (
+                            <span className="text-xs text-muted-foreground">
+                              平均順位: {latestScore.avg_rank.toFixed(1)}位
+                            </span>
+                          )}
                           {latestScore.total_rank <= 3 && (
                             <motion.div
                               animate={{ rotate: [0, 10, 0, -10, 0] }}
                               transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, repeatType: "reverse" }}
+                              className="mt-1"
                             >
-                              <Award className="h-5 w-5 text-yellow-500" />
+                              <Award className="h-5 w-5 text-yellow-500 mx-auto" />
                             </motion.div>
                           )}
                         </div>
@@ -421,6 +470,7 @@ export default function StudentDashboard({
         </motion.div>
       </TabsContent>
 
+      {/* 詳細成績タブ */}
       <TabsContent value="details" className="mt-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <Card className="card-decorated">
@@ -474,7 +524,7 @@ export default function StudentDashboard({
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-muted/50">
+                    <TableRow className="bg-muted/30">
                       <TableHead>試験名</TableHead>
                       <TableHead>実施日</TableHead>
                       <TableHead className="whitespace-nowrap text-right">
@@ -598,6 +648,7 @@ export default function StudentDashboard({
         </motion.div>
       </TabsContent>
 
+      {/* 成績分析タブ */}
       <TabsContent value="analysis" className="mt-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <Card className="card-decorated">
@@ -855,6 +906,7 @@ export default function StudentDashboard({
         </motion.div>
       </TabsContent>
 
+      {/* 順位情報タブ */}
       <TabsContent value="ranking" className="mt-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <Card className="card-decorated">
@@ -922,7 +974,7 @@ export default function StudentDashboard({
                     <CardHeader>
                       <CardTitle className="text-lg flex items-center gap-2">
                         <Medal className="h-5 w-5 text-secondary" />
-                        総合順位
+                        総合順位（平均順位に基づく）
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -942,15 +994,126 @@ export default function StudentDashboard({
                       </div>
 
                       <div className="mt-4">
+                        {latestScore.avg_rank !== undefined && (
+                          <p className="text-sm text-gray-600 mb-2">
+                            平均順位: <span className="font-medium">{latestScore.avg_rank.toFixed(1)}位</span>
+                          </p>
+                        )}
                         <p className="text-sm text-gray-600">
-                          総合順位は、これまでのすべてのテスト結果を考慮した順位です。
-                          継続的に良い成績を維持することで、総合順位が上がります。
+                          総合順位は、これまでのすべてのテストでの順位の平均に基づいています。
+                          継続的に良い順位を維持することで、総合順位が上がります。
                         </p>
                       </div>
                     </CardContent>
                   </Card>
                 </motion.div>
               </div>
+
+              {/* 順位の推移グラフ */}
+              <Card className="overflow-hidden border-2 border-blue-200 bg-gradient-to-br from-white to-blue-50">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-blue-500" />
+                    順位の推移
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-80 w-full bg-white p-4 rounded-xl shadow-sm">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={chartData.map((item) => ({ ...item, invertedRank: item.rank ? -item.rank : 0 }))}
+                        margin={{ top: 20, right: 30, left: 20, bottom: 10 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                        <XAxis dataKey="date" stroke="#888" fontSize={12} />
+                        <YAxis
+                          stroke="#888"
+                          fontSize={12}
+                          tickFormatter={(value) => `${Math.abs(value)}位`}
+                          domain={["dataMin", "dataMax"]}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "white",
+                            borderRadius: "8px",
+                            border: "1px solid #e2e8f0",
+                            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                          }}
+                          formatter={(value, name) => {
+                            if (name === "順位") {
+                              return [`${Math.abs(value as number)}位`, name]
+                            }
+                            return [value, name]
+                          }}
+                        />
+                        <Legend />
+                        <Line
+                          type="monotone"
+                          dataKey="invertedRank"
+                          stroke="#3b82f6"
+                          strokeWidth={3}
+                          dot={{ r: 6, fill: "#3b82f6", strokeWidth: 2, stroke: "white" }}
+                          activeDot={{ r: 8, fill: "#2563eb" }}
+                          name="順位"
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="text-sm text-gray-500 mt-2 text-center">
+                    ※グラフは上に行くほど順位が上位であることを示しています
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* 過去のテスト順位一覧 */}
+              <Card className="overflow-hidden border-2 border-accent/20 bg-gradient-to-br from-white to-pink-50">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Medal className="h-5 w-5 text-accent" />
+                    過去のテスト順位一覧
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/30">
+                          <TableHead>テスト名</TableHead>
+                          <TableHead>実施日</TableHead>
+                          <TableHead className="text-center">順位</TableHead>
+                          <TableHead className="text-center">合計点</TableHead>
+                          <TableHead className="text-center">平均点</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {scores.map((score, index) => {
+                          return (
+                            <TableRow
+                              key={score.id}
+                              className={`hover:bg-blue-50/50 ${index % 2 === 0 ? "bg-white" : "bg-gray-50/50"}`}
+                            >
+                              <TableCell className="font-medium">{score.test_name}</TableCell>
+                              <TableCell>{new Date(score.test_date).toLocaleDateString("ja-JP")}</TableCell>
+                              <TableCell className="text-center">
+                                <Badge
+                                  variant={score.rank <= 3 ? "default" : "outline"}
+                                  className={score.rank <= 3 ? "bg-yellow-500" : "bg-blue-50 border-blue-200"}
+                                >
+                                  {score.rank || "-"}位
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-center">{score.total_score || "-"}点</TableCell>
+                              <TableCell className="text-center">
+                                {score.avg_total_score?.toFixed(1) || "-"}点
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
 
               <Card className="overflow-hidden border-2 border-accent/20 bg-gradient-to-br from-white to-pink-50">
                 <CardHeader>
@@ -1093,6 +1256,7 @@ export default function StudentDashboard({
         </motion.div>
       </TabsContent>
 
+      {/* 実績タブ */}
       <TabsContent value="achievements" className="mt-4">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <Card className="card-decorated">
@@ -1114,7 +1278,7 @@ export default function StudentDashboard({
                     <div className="level-badge from-blue-400 to-primary text-lg w-12 h-12">{studyLevel}</div>
                     <div>
                       <h4 className="font-medium">レベル {studyLevel}</h4>
-                      <p className="text-sm text-gray-600">模擬試験を受けるたびにレベルアップします！</p>
+                      <p className="text-sm text-gray-600">実績を達成するたびにレベルアップします！</p>
                     </div>
                   </div>
                   <div className="mt-3">
@@ -1125,11 +1289,16 @@ export default function StudentDashboard({
                     <div className="progress-bar">
                       <div
                         className="progress-value bg-gradient-to-r from-blue-400 to-primary"
-                        style={{ width: `${(scores.length % 2) * 50}%` }}
+                        style={{ width: `${studyLevel < 10 ? 100 : 100}%` }}
                       ></div>
                     </div>
                     <div className="text-xs text-gray-500 flex justify-between mt-1">
-                      <span>あと{2 - (scores.length % 2)}回の模擬試験でレベルアップ！</span>
+                      <span>実績達成回数: {totalAchievements}回</span>
+                      {studyLevel < 10 ? (
+                        <span>あと{10 - studyLevel}回の実績達成でレベルMAX！</span>
+                      ) : (
+                        <span>最大レベル達成！おめでとう！</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1151,6 +1320,9 @@ export default function StudentDashboard({
                     <div>
                       <h4 className="font-medium">{achievement.name}</h4>
                       <p className="text-xs text-gray-600">{achievement.description}</p>
+                      {achievement.unlocked && (
+                        <div className="flex gap-1 mt-1">{renderBadges(achievement.count, achievement.color)}</div>
+                      )}
                     </div>
                     {achievement.unlocked && (
                       <motion.div
@@ -1158,7 +1330,9 @@ export default function StudentDashboard({
                         transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
                         className="ml-auto"
                       >
-                        <Award className="h-5 w-5 text-yellow-500" />
+                        <div className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-1 rounded-full">
+                          {achievement.count}回達成
+                        </div>
                       </motion.div>
                     )}
                   </motion.div>
@@ -1171,25 +1345,25 @@ export default function StudentDashboard({
               </h3>
               <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
                 <ul className="space-y-2">
-                  {!unlockedAchievements[1].unlocked && (
+                  {!unlockedAchievements[0].unlocked && (
                     <li className="flex items-center gap-2">
                       <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                       <span>合格ラインを突破しよう！</span>
                     </li>
                   )}
-                  {!unlockedAchievements[2].unlocked && (
+                  {!unlockedAchievements[1].unlocked && (
                     <li className="flex items-center gap-2">
                       <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                       <span>ランキングトップ10を目指そう！</span>
                     </li>
                   )}
-                  {!unlockedAchievements[3].unlocked && (
+                  {!unlockedAchievements[2].unlocked && (
                     <li className="flex items-center gap-2">
                       <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                       <span>3回連続で合格ラインを超えよう！</span>
                     </li>
                   )}
-                  {!unlockedAchievements[4].unlocked && (
+                  {!unlockedAchievements[3].unlocked && (
                     <li className="flex items-center gap-2">
                       <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                       <span>全ての分野で平均点以上を獲得しよう！</span>
@@ -1198,7 +1372,7 @@ export default function StudentDashboard({
                   {unlockedAchievements.every((a) => a.unlocked) && (
                     <li className="flex items-center gap-2">
                       <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                      <span>おめでとう！全てのバッジを獲得しました！</span>
+                      <span>おめでとう！全てのバッジを獲得しました！さらに実績を積み重ねましょう！</span>
                     </li>
                   )}
                 </ul>
