@@ -1,16 +1,17 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import StudentDashboard from "@/components/student-dashboard"
 import { getStudentScoresWithStats } from "@/lib/ranking-utils"
 import LogoutButton from "@/components/logout-button"
 import { Heart, Loader2 } from "lucide-react"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { createClientComponentClient } from "@/lib/supabase"
 import { ParamedicMascot } from "@/components/paramedic-mascot"
 
-export default function DashboardPage({ params }: { params: { id: string } }) {
+export default function DashboardPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
   const [student, setStudent] = useState<any>(null)
   const [scores, setScores] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -33,7 +34,7 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
         const studentData = JSON.parse(storedStudent)
 
         // IDが一致するか確認
-        if (studentData.id !== params.id) {
+        if (studentData.id !== id) {
           console.error("学生IDが一致しません")
           router.push("/")
           return
@@ -53,7 +54,7 @@ export default function DashboardPage({ params }: { params: { id: string } }) {
     }
 
     fetchData()
-  }, [params.id, router])
+  }, [id, router])
 
   if (loading) {
     return (

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
+import { createRouteHandlerClient } from "@/lib/supabase"
 
 export async function GET() {
   try {
@@ -104,7 +103,7 @@ export async function GET() {
     }
 
     // Supabaseクライアントを作成
-    const supabase = createRouteHandlerClient({ cookies })
+    const supabase = createRouteHandlerClient()
 
     // テーブル構造を確認
     const { data: tableInfo, error: tableError } = await supabase.from("students").select("*").limit(0)

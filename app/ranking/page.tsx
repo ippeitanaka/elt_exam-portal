@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Medal, Loader2, AlertCircle, Trophy, Award, Crown } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { getTotalRankings, getTestRankings } from "@/lib/ranking-utils"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { createClientComponentClient } from "@/lib/supabase"
 import { motion } from "framer-motion"
 
 export default function RankingPage() {

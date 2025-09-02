@@ -170,3 +170,21 @@
   @apply inline-flex items-center justify-center w-8 h-8 rounded-full text-white font-bold text-xs;
   background: linear-gradient(135deg, var(--tw-gradient-stops));
 }
+
+/* Qやんキャラクター */
+.qyan-character {
+  @apply transition-all duration-300 hover:scale-105;
+}
+
+.qyan-character:hover {
+  animation: float 2s ease-in-out infinite;
+}
+
+/* AI分析カード */
+.ai-analysis-card {
+  @apply bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200;
+}
+
+.ai-prediction-card {
+  @apply bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200;
+}

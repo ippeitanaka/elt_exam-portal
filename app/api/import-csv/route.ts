@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
+import { createRouteHandlerClient } from "@/lib/supabase"
 
 export async function GET() {
   try {
@@ -16,7 +15,7 @@ export async function GET() {
     const text = await response.text()
 
     // Supabaseクライアントを作成
-    const supabase = createRouteHandlerClient({ cookies })
+    const supabase = createRouteHandlerClient()
 
     // CSVデータを直接処理
     const rows = text.split("\n")

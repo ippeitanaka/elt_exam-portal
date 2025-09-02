@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Loader2, RefreshCw } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { createClientComponentClient } from "@/lib/supabase"
 
 interface PasswordResetDialogProps {
   studentId: string

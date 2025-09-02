@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
+import { createRouteHandlerClient } from "@/lib/supabase"
 import { checkAdminApiAuth } from "@/lib/auth-utils"
 
 export async function POST(request: Request) {
@@ -11,7 +10,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    const supabase = createRouteHandlerClient()
     const { testName, testDate } = await request.json()
 
     if (!testName || !testDate) {

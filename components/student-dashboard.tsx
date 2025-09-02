@@ -32,6 +32,7 @@ import {
   Activity,
   Calendar,
   CheckCircle,
+  Brain,
 } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -39,6 +40,7 @@ import type { TestScoreWithStats } from "@/lib/ranking-utils"
 import { motion } from "framer-motion"
 import { ParamedicMascot } from "@/components/paramedic-mascot"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import AIAnalysisTab from "@/components/ai-analysis-tab"
 
 type Student = {
   id: string
@@ -296,35 +298,41 @@ export default function StudentDashboard({
 
   return (
     <Tabs defaultValue="overview" onValueChange={setActiveTab}>
-      <TabsList className="grid w-full grid-cols-5 rounded-xl bg-muted/80">
-        <TabsTrigger value="overview" className="rounded-lg data-[state=active]:bg-primary">
-          <div className="flex items-center gap-1 md:gap-2">
-            <Activity size={14} className="md:h-4 md:w-4" />
-            <span className="text-xs md:text-sm">概要</span>
+      <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 rounded-xl bg-muted/80 gap-1 p-1">
+        <TabsTrigger value="overview" className="rounded-lg data-[state=active]:bg-primary text-xs sm:text-sm px-1 sm:px-3">
+          <div className="flex items-center gap-1">
+            <Activity size={12} className="sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">概要</span>
           </div>
         </TabsTrigger>
-        <TabsTrigger value="details" className="rounded-lg data-[state=active]:bg-primary">
-          <div className="flex items-center gap-1 md:gap-2">
-            <BookOpen size={14} className="md:h-4 md:w-4" />
-            <span className="text-xs md:text-sm">詳細成績</span>
+        <TabsTrigger value="details" className="rounded-lg data-[state=active]:bg-primary text-xs sm:text-sm px-1 sm:px-3">
+          <div className="flex items-center gap-1">
+            <BookOpen size={12} className="sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">詳細成績</span>
           </div>
         </TabsTrigger>
-        <TabsTrigger value="analysis" className="rounded-lg data-[state=active]:bg-primary">
-          <div className="flex items-center gap-1 md:gap-2">
-            <Target size={14} className="md:h-4 md:w-4" />
-            <span className="text-xs md:text-sm">成績分析</span>
+        <TabsTrigger value="analysis" className="rounded-lg data-[state=active]:bg-primary text-xs sm:text-sm px-1 sm:px-3">
+          <div className="flex items-center gap-1">
+            <Target size={12} className="sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">成績分析</span>
           </div>
         </TabsTrigger>
-        <TabsTrigger value="ranking" className="rounded-lg data-[state=active]:bg-primary">
-          <div className="flex items-center gap-1 md:gap-2">
-            <Medal size={14} className="md:h-4 md:w-4" />
-            <span className="text-xs md:text-sm">順位情報</span>
+        <TabsTrigger value="ai-analysis" className="rounded-lg data-[state=active]:bg-primary text-xs sm:text-sm px-1 sm:px-3">
+          <div className="flex items-center gap-1">
+            <Brain size={12} className="sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">AI分析</span>
           </div>
         </TabsTrigger>
-        <TabsTrigger value="achievements" className="rounded-lg data-[state=active]:bg-primary">
-          <div className="flex items-center gap-1 md:gap-2">
-            <Award size={14} className="md:h-4 md:w-4" />
-            <span className="text-xs md:text-sm">実績</span>
+        <TabsTrigger value="ranking" className="rounded-lg data-[state=active]:bg-primary text-xs sm:text-sm px-1 sm:px-3">
+          <div className="flex items-center gap-1">
+            <Medal size={12} className="sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">順位情報</span>
+          </div>
+        </TabsTrigger>
+        <TabsTrigger value="achievements" className="rounded-lg data-[state=active]:bg-primary text-xs sm:text-sm px-1 sm:px-3">
+          <div className="flex items-center gap-1">
+            <Award size={12} className="sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">実績</span>
           </div>
         </TabsTrigger>
       </TabsList>
@@ -903,6 +911,13 @@ export default function StudentDashboard({
               </Card>
             </CardContent>
           </Card>
+        </motion.div>
+      </TabsContent>
+
+      {/* AI分析タブ */}
+      <TabsContent value="ai-analysis" className="mt-4">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          <AIAnalysisTab student={student} scores={scores} />
         </motion.div>
       </TabsContent>
 
