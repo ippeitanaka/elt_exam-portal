@@ -298,8 +298,8 @@ export default function StudentDashboard({
 
   return (
     <Tabs defaultValue="overview" onValueChange={setActiveTab}>
-      <div className="relative">
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 rounded-xl bg-muted/80 gap-2 p-2">
+      <div className="relative mb-6 sm:mb-4">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 rounded-xl bg-muted/80 gap-2 p-2 min-h-[140px] sm:min-h-[60px]">
           <TabsTrigger value="overview" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-200 px-2 py-4 min-h-[60px] sm:min-h-[48px]">
             <div className="flex flex-col items-center gap-2">
               <Activity size={18} className="flex-shrink-0 sm:size-4" />
@@ -340,7 +340,7 @@ export default function StudentDashboard({
       </div>
 
       {/* 概要タブ */}
-      <TabsContent value="overview" className="mt-4">
+      <TabsContent value="overview" className="mt-0">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <Card className="card-decorated bg-gradient-to-br from-white to-blue-50">
             <CardHeader>
@@ -481,7 +481,7 @@ export default function StudentDashboard({
       </TabsContent>
 
       {/* 詳細成績タブ */}
-      <TabsContent value="details" className="mt-4">
+      <TabsContent value="details" className="mt-0">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <Card className="card-decorated">
             <CardHeader>
@@ -659,7 +659,7 @@ export default function StudentDashboard({
       </TabsContent>
 
       {/* 成績分析タブ */}
-      <TabsContent value="analysis" className="mt-4">
+      <TabsContent value="analysis" className="mt-0">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <Card className="card-decorated">
             <CardHeader>
@@ -917,14 +917,14 @@ export default function StudentDashboard({
       </TabsContent>
 
       {/* AI分析タブ */}
-      <TabsContent value="ai-analysis" className="mt-4">
+      <TabsContent value="ai-analysis" className="mt-0">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <AIAnalysisTab student={student} scores={scores} />
         </motion.div>
       </TabsContent>
 
       {/* 順位情報タブ */}
-      <TabsContent value="ranking" className="mt-4">
+      <TabsContent value="ranking" className="mt-0">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <Card className="card-decorated">
             <CardHeader>
@@ -1274,7 +1274,7 @@ export default function StudentDashboard({
       </TabsContent>
 
       {/* 実績タブ */}
-      <TabsContent value="achievements" className="mt-4">
+      <TabsContent value="achievements" className="mt-0">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <Card className="card-decorated">
             <CardHeader>
